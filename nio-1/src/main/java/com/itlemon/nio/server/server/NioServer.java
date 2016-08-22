@@ -1,9 +1,8 @@
-package com.itlemon.nio.server;
+package com.itlemon.nio.server.server;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
@@ -58,15 +57,11 @@ public class NioServer {
                     ketIt.remove();
                     
                     if(key.isAcceptable()){
-                    	accep(key);
-                    }
-                    
-                    if(key.isWritable()){
-                    	write(key);
+                        accept(key);
                     }
                     
                     if(key.isReadable()){
-                    	read(key);
+                        read(key);
                     }
                 }
 
@@ -78,7 +73,7 @@ public class NioServer {
 
     }
 
-    private void accep(SelectionKey key) {
+    private void accept(SelectionKey key) {
     	ServerSocketChannel channel = (ServerSocketChannel)key.channel();
     	try {
 			SocketChannel sc = channel.accept();
@@ -91,27 +86,35 @@ public class NioServer {
 		}
     }
     
-    private void write(SelectionKey key) {
-    	ServerSocketChannel channel = (ServerSocketChannel)key.channel();
-    	try {
-    		
-			SocketChannel sc = channel.accept();
-			
-			ByteBuffer buffer = ByteBuffer.allocate(1);
-			
-			sc.read(buffer);
-			
-			buffer.flip();
-			
-			//System.out.println(new String(buffer.get));
-			
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-    }
-    
     private void read(SelectionKey key) {
-    	
+
+        try {
+
+            SocketChannel sc = (SocketChannel) key.channel();
+
+            ByteBuffer buffer = ByteBuffer.allocate(12);
+
+            sc.read(buffer);
+
+            buffer.flip();
+
+            System.out.println("==> Remaining len = " + buffer.remaining());
+
+            byte [] bytes = buffer.array();
+
+            String receive = new String(bytes);
+
+            System.out.println("==>read bytes len ="  +
+                    bytes.length + "str = " + receive);
+
+            ByteBuffer outBuffer = ByteBuffer.wrap(("server got " + receive).getBytes() );
+
+            sc.write(outBuffer);
+
+
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
     }
 }
