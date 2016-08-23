@@ -1,19 +1,26 @@
 package cc.itlemo.nio.server;
 
-import com.itlemon.nio.server.NioServer;
-
 import java.io.IOException;
+
+import cc.itlemon.nio.server.NioServer;
+import cc.itlemon.nio.server.ReactorRunable;
 
 public class NioServerTest {
 
-	public static void main(String[] args) {
-		NioServer server = new NioServer(12345);
+	public static void main(String[] args) throws Exception{
+		
+		ReactorRunable runable = new ReactorRunable();
+		
+		new Thread(runable).start();
+		
+		NioServer server = new NioServer(12345,runable);
+		
 		try {
 			server.start();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		
 	}
 	
 }

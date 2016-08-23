@@ -1,4 +1,4 @@
-package com.itlemon.nio.server;
+package cc.itlemon.nio.server;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -14,50 +14,44 @@ import java.util.Set;
  */
 public class NioReactor {
 
-    private Selector selector;
-
     private ReactorThread thread;
 
     public NioReactor() {
         try {
-            this.selector = Selector.open();
-            thread = new ReactorThread();
-            thread.run();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+			thread = new ReactorThread();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+        new Thread(thread).start();
     }
 
     public void registry (SelectionKey key) {
-
-        System.out.println("==> key = " + key);
-
-        ServerSocketChannel channel = (ServerSocketChannel) key.channel();
-
-        System.out.println("=> 服务注册");
-
-        try {
-            SocketChannel sh = channel.accept();
-            sh.configureBlocking(false).register(this.selector,SelectionKey.OP_READ);
-            //selector.wakeup();
-            System.out.println("=> 服务注册");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
+    	this.thread.selector.wakeup();
+    	this.thread.registry(key);
     }
 
-    class ReactorThread extends Thread {
+    private final class ReactorThread extends Thread {
+    	
+    	private final Selector selector;
+    	
+    	private ReactorThread () throws IOException {
+			this.selector = Selector.open();
+    	}
+    	
+    	public void registry (SelectionKey key) {
+            ServerSocketChannel channel = (ServerSocketChannel) key.channel();
+            try {
+                SocketChannel sh = channel.accept();
+                sh.configureBlocking(false).register(this.selector,SelectionKey.OP_READ);
+                System.out.println("=>"+Thread.currentThread().getName()+" 客户端连接");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+    	}
 
         public void run() {
-
-
             for (;;) {
-
-                System.out.println("==>123");
-
                 try {
-
                     selector.select(1000l);
 
                     Set<SelectionKey> keys = selector.selectedKeys();
@@ -70,8 +64,6 @@ public class NioReactor {
 
                         ketIt.remove();
 
-                        System.out.println("==> key =" + key);
-
                         if(key.isValid() && key.isReadable()) {
 
                             SocketChannel sc = (SocketChannel) key.channel();
@@ -82,27 +74,23 @@ public class NioReactor {
 
                             buffer.flip();
 
-                            System.out.println("==> Remaining len = " + buffer.remaining());
-
                             byte [] bytes = buffer.array();
 
                             String receive = new String(bytes);
 
-                            System.out.println("==>read bytes len ="  +
-                                    bytes.length + "str = " + receive);
+                            System.out.println("==>read bytes len ="  + bytes.length + "str = " + receive);
+                            
+                            sc.write(ByteBuffer.wrap("i got this".getBytes()));
 
                         }else{
                             key.cancel();
                         }
-
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-
             }
         }
-
     }
 
 
